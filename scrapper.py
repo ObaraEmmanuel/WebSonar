@@ -2,11 +2,12 @@
 #  Written by Barracoder
 #  November 2018
 
-import urllib.request
-import urllib.parse
-import urllib.error
-import re
 import hashlib
+import re
+import urllib.error
+import urllib.parse
+import urllib.request
+
 
 # TODO Pagination detection and isolation -- special algorithm
 
@@ -21,6 +22,12 @@ class DeepRecurse:
         self.parent = parent
         self.web_content = web_content
         self.next = None
+        if self.depth == 1:
+            if not self.web_content.is_valid:
+                DeepRecurse.visited.add(hashlib.sha3_256(web_content.url.encode("utf-8")).hexdigest())
+                raise ValueError(self.web_content.error)
+            elif not web_content.plain_urls():
+                raise ValueError("We could not find any sub-URLs")
 
     def recurse(self, explorer=None):
         if self.depth > self.max_depth:
@@ -28,14 +35,15 @@ class DeepRecurse:
         for link in self.web_content.plain_urls():
             if hashlib.sha3_256(link.encode("utf-8")).hexdigest() in DeepRecurse.visited:
                 continue
+            DeepRecurse.visited.add(hashlib.sha3_256(link.encode("utf-8")).hexdigest())
             content = WebContent(link, self.web_content.options)
             if content.is_valid:
-                identity = hashlib.sha3_256(link.encode("utf-8")).hexdigest()
-                DeepRecurse.visited.add(identity)
                 self.children[link] = DeepRecurse(content, self, self.depth + 1, max_depth=self.max_depth)
-                if explorer:
-                    explorer.push(self.children[link])
-                self.children[link].recurse()
+                if self.depth == 1:
+                    explorer["valid_urls"].push(self.children[link])
+                self.children[link].recurse(explorer)
+            elif explorer and not content.is_valid:
+                explorer["invalid_urls"].push(content)
 
     def links(self):
         for link in self.children.keys():
@@ -58,12 +66,12 @@ class WebContent:
         self.is_valid = True
         self.error = None
         try:
-            self.__content = str(urllib.request.urlopen(self.__request).read().decode("utf-8"))
+            self.__content = str(urllib.request.urlopen(self.__request, timeout=5).read().decode("utf-8"))
         except Exception as e:
-            #  TODO Bind to class method open_url which performs error handling
             self.is_valid = False
             self.__content = ""
             self.error = e
+            print(e)
 
     @property
     def content(self):
@@ -110,6 +118,10 @@ class WebContent:
         else:
             return True
 
+    @property
+    def files(self):
+        return list(re.findall(WebContent.url_regex["file"], self.content))
+
     def plain_urls(self, ignore_files=True):
         if not self.is_valid:
             return []
@@ -122,7 +134,7 @@ class WebContent:
 
 if __name__ == "__main__":
     sonar = DeepRecurse(WebContent(
-        "http://127.0.0.1:8000/table/creator/ECE/1",
+        "",
         {"User-Agent": "Mozilla/5.0"}), max_depth=5)
     sonar.recurse()
     sonar.links()

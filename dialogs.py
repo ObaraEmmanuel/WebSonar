@@ -1,8 +1,9 @@
+import threading
 from tkinter import Toplevel, Label, Frame
+
+import utilities
 from scrapper import DeepRecurse, WebContent
 from widgets import Input, SpinBox
-import threading
-import utilities
 
 
 class Dialog(Toplevel):
@@ -14,6 +15,7 @@ class Dialog(Toplevel):
         self.resizable(0, 0)
         self.content = content
         self.config(bg="#404040")
+        self.attributes("-toolwindow", True)
         self.parent = parent
         self.body = Frame(self, bg="#404040")
         self.body.pack(side="top", fill="both", expand=True, pady=10)
@@ -82,9 +84,22 @@ class TreeSearch(Frame):
             pass
         return depth
 
+    def start_extraction(self, depth):
+        try:
+            self.explorer["valid_urls"].root_link = DeepRecurse(WebContent(self.link.val(),
+                                                                           {"User-Agent": "Mozilla/5.0"}),
+                                                                max_depth=depth)
+        except ValueError as e:
+            self.explorer["valid_urls"].show_error(e)
+            return
+        self.explorer["valid_urls"].root_link.recurse(self.explorer)
+
     def activate(self):
-        self.explorer.root_link = DeepRecurse(WebContent(self.link.val(),
-                                                         {"User-Agent": "Mozilla/5.0"}), max_depth=self.get_depth())
-        self.explorer.start_loader()
-        self.dialog.destroy()
-        threading.Thread(target=lambda: self.explorer.root_link.recurse(self.explorer)).start()
+        try:
+            depth = self.get_depth()
+            self.dialog.destroy()
+            self.explorer["valid_urls"].start_loader()
+            threading.Thread(target=lambda: self.start_extraction(depth)).start()
+        except ValueError as e:
+            self.dialog.destroy()
+            self.explorer["valid_urls"].show_error(str(e))

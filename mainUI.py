@@ -3,10 +3,12 @@
 #  Written by Barracoder
 #  Github at Triedcoders
 
-from tkinter import Tk, Frame, Label
+from tkinter import Tk, Frame, Label, StringVar, Canvas
+
 from animate import Animator
 from dialogs import ClosePrompt, TreeSearch
-from structures import ItemExplorer
+from structures import ItemExplorer, InvalidItemExplorer
+from utilities import Events
 from widgets import Search
 
 
@@ -31,7 +33,7 @@ class MenuItem(Label):
         self.bind("<Button-1>", lambda x: self.show())
         self.frame = Frame(self.parent.drop_down, bg=self.bg, height=45)
         retract = Label(self.frame, text="\ue70e", fg="orange", bg="#404040", cursor="hand2")
-        retract.pack(side="right")
+        # retract.pack(side="right")
         retract.bind("<Button-1>", lambda x: self.parent.collapse())
 
     def build(self, **callbacks):
@@ -138,6 +140,7 @@ class App:
                            "\ue74e Save": self.blank,
                            "\ue749 print": self.blank,
                            "\ue7e8 exit": self.terminate})
+        self.file.show()
         self.search = MenuItem(self.menu, bg="orange", fg="#505050", text="\ue721  search", font="calibri 12",
                                width=15)
         self.search.build(**{"\ue81e tree search": self.tree_search,
@@ -160,17 +163,31 @@ class App:
         self.base = Frame(self.body, bg="#505050")
         self.base.place(relx=0.3, y=0, relwidth=0.7, relheight=1)
 
-        self.explorer = ItemExplorer(self.base, bg="#505050")
-        self.explorer.pack(side="top", fill="both", expand=True)
+        self.valid_urls = ItemExplorer(self.base, bg="#505050")
+        self.invalid_urls = InvalidItemExplorer(self.base, bg="#505050")
+        self.commandline = Frame(self.base, bg="#505050")
+        self.file_explorer = ItemExplorer(self.base, bg="#505050")
+        self.net_test = Frame(self.base, bg="#505050")
+
+        self.explorer = {"valid_urls": self.valid_urls,
+                         "invalid_urls": self.invalid_urls,
+                         "commandline": self.commandline,
+                         "file_explorer": self.file_explorer,
+                         "net_test": self.net_test}
+
+        self.navigator = NavHandler(self.nav, self.base)
+        self.navigator.add("Valid URLs", "\ue77f", self.valid_urls)
+        self.navigator.add("Invalid URLs", "\ue7ba", self.invalid_urls)
+        self.navigator.add("Command line", "\ue756", self.commandline)
+        self.navigator.add("Retrieved files", "\uec50", self.file_explorer)
+        self.navigator.add("Network speed", "\uec4a", self.net_test)
+        self.navigator.select(self.navigator[0])
 
         self.splash = SwipeFrame(self, bg="#505050")
         # self.splash.place(x=0, y=0, relwidth=1, relheight=1)
         self.start_text = Label(self.splash, text="WebSonar", font="calibri 40", fg="orange", bg="#505050")
         self.start_text.place(relwidth=0.3, relheight=0.2, rely=0.4, relx=0.35)
         # self.root.after(3000, self.splash.swipe)
-
-        #  for i in range(30):
-        #  self.explorer.add(PathItem(self.explorer.body))
 
     def run(self):
         self.root.mainloop()
@@ -183,6 +200,73 @@ class App:
 
     def tree_search(self):
         TreeSearch(self.root, self.explorer)
+
+
+class NavHandler(Frame):
+
+    def __init__(self, parent, display, **options):
+        super().__init__(parent, options)
+        self.config(bg="#404040")
+        self.selected = None
+        self.navigators = []
+        self.indicator = Canvas(self, bg="#404040", highlightthickness=0)
+        self.indicator.place(relwidth=0.1, relx=0.9, y=0, height=62)
+        self.indicator.create_polygon(30, 10, 10, 30, 30, 50, fill="#505050")
+        self.pack(fill="both", expand=True)
+        self.animator = Animator(0, 62, 0.8)
+        self.show_pad = display
+        self.currently_displayed = None
+
+    def add(self, text, icon, explorer=None):
+        self.navigators.append(NavItem(self, text, icon, explorer))
+
+    def __getitem__(self, index):
+        return self.navigators[index]
+
+    def select(self, item):
+        if self.selected == item:
+            return
+        if self.currently_displayed:
+            self.currently_displayed.pack_forget()
+        self.selected = item
+        item.explorer.pack(side="top", fill="both", expand=True)
+        self.animator.update(self.indicator.place_info()["y"], self.navigators.index(item) * 62, 0.8)
+        self.slide()
+        self.currently_displayed = item.explorer
+
+    def slide(self):
+        value = self.animator.get()
+        if value is None:
+            self.indicator.place(relwidth=0.1, relx=0.9, y=self.animator.final, height=62)
+            return
+        self.indicator.place(y=self.animator.get(), relx=0.9, relwidth=0.1, height=62)
+        self.indicator.after(int(self.animator.duration * 10), lambda: self.slide())
+
+
+class NavItem(Frame):
+
+    def __init__(self, parent, text="Valid URLs", icon="\ue77f", explorer=None, **options):
+        super().__init__(parent, options)
+        self.parent = parent
+        self.config(bg="orange", height=60, cursor="hand2", takefocus=1)
+        self.icon = Label(self, bg="#404040", fg="orange", font="calibri 20", text=icon)
+        self.icon.place(rely=0.01, relx=0, relheight=0.99, relwidth=0.22)
+        self.label = Label(self, bg="#404040", fg="#1fb27b", font="calibri 13", text=text, takefocus=1)
+        self.label.place(rely=0.01, relx=0.22, relheight=0.99, relwidth=0.4)
+        self.count = StringVar()
+        self.count_lbl = Label(self, bg="#404040", fg="orange", font="calibri 11", text="2000", textvariable=self.count)
+        self.count_lbl.place(rely=0.01, relx=0.62, relheight=0.99, relwidth=0.38)
+        self.place(relwidth=0.9, height=60, y=len(parent.navigators) * 62, x=6)
+        # self.pack(side="top",fill="x")
+        Events.on_click(self.select_self, self, self.icon, self.label, self.count_lbl)
+        self.bind("<FocusIn>", lambda x: self.select_self())
+        self.explorer = explorer
+
+    def update_val(self, value):
+        self.count.set(value)
+
+    def select_self(self):
+        self.parent.select(self)
 
 
 class SwipeFrame(Frame):
