@@ -158,3 +158,4 @@ class FancyLoader:
 
     def stop_load(self):
         self.load_allowed = False
+        self.label.config(text="")

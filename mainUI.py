@@ -6,7 +6,7 @@
 from tkinter import Tk, Frame, Label, StringVar, Canvas
 
 from animate import Animator
-from dialogs import ClosePrompt, TreeSearch
+from dialogs import ClosePrompt, TreeSearch, KeyWordSearch
 from structures import ItemExplorer, InvalidItemExplorer
 from utilities import Events
 from widgets import Search
@@ -144,7 +144,7 @@ class App:
         self.search = MenuItem(self.menu, bg="orange", fg="#505050", text="\ue721  search", font="calibri 12",
                                width=15)
         self.search.build(**{"\ue81e tree search": self.tree_search,
-                             "\ue71c keyword": self.blank,
+                             "\ue71c keyword": self.keyword_search,
                              "\ue773 file search": self.blank,
                              "\uec27 find url": self.blank})
         self.setting = MenuItem(self.menu, bg="orange", fg="#505050", text="\ue713  settings", font="calibri 12",
@@ -200,6 +200,9 @@ class App:
 
     def tree_search(self):
         TreeSearch(self.root, self.explorer)
+
+    def keyword_search(self):
+        KeyWordSearch(self.root, self.explorer)
 
 
 class NavHandler(Frame):

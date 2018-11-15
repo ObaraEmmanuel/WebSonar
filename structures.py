@@ -38,10 +38,12 @@ class ItemExplorer(Frame):
         self.__root.bind_all("<MouseWheel>", self.on_mouse_wheel)
         self.back = Label(self.nav_bar, bg="#505050", fg="orange", text="\ue760", font="calibri 19", cursor="hand2")
         self.forward = Label(self.nav_bar, bg="#505050", fg="orange", text="\ue761", font="calibri 19", cursor="hand2")
+        self.loading = Label(bar, bg="#505050", fg="orange", text="", font="calibri 19", cursor="hand2")
         self.back.pack(side="left", padx=1)
         self.back.bind("<Button-1>", lambda ev: self.back_callback())
         self.forward.pack(side="left", padx=1)
         self.forward.bind("<Button-1>", lambda ev: self.forward_callback())
+        self.loading.pack(side="left", padx=1)
 
         self.no_content = Frame(self.body, bg="#505050")
         self.no_content_icon = Label(self.no_content, bg="#505050", fg="#404040", font="calibri 60")
@@ -54,6 +56,7 @@ class ItemExplorer(Frame):
         self.expand_animate = Animator(3, 15, 1)
         self.contract_animate = Animator(15, 3, 1)
         self.loader = FancyLoader(self.no_content_icon)
+        self.mini_loader = FancyLoader(self.loading)
         self.loader.start_load()
         self.scroll_soft_hide = True
         self.current_trigger = None
@@ -72,6 +75,7 @@ class ItemExplorer(Frame):
         self.no_content_text["text"] = "Working on it..."
         self.clear()
         self.loader.start_load()
+        self.mini_loader.start_load()
 
     def on_configure(self, ev):
         self.__root.itemconfigure(self.window, width=ev.width)
@@ -162,12 +166,18 @@ class ItemExplorer(Frame):
 
     def show_alt_text(self, text, icon="\ue77f"):
         self.loader.stop_load()
+        self.mini_loader.stop_load()
         self.clear()
         self.body.pack_propagate(0)
         self.body.config(height=self.__root["height"], width=self.__root["height"])
         self.no_content_icon["text"] = icon
         self.no_content_text["text"] = text
         self.no_content.place(relx=0.1, rely=0.3, relwidth=0.8, relheight=0.8)
+
+    def push_search_item(self, deep_recurse):
+        self.add(SearchedItem(deep_recurse, self))
+        self.check_scroll()
+        self.nav_bar.pack_forget()
 
     def show_error(self, text):
         self.show_alt_text(text, "\ue7ba")
@@ -180,7 +190,7 @@ class InvalidItemExplorer(ItemExplorer):
         self.nav_bar.pack_forget()
 
     def push(self, web_content):
-        self.add(InvalidItem(self, web_content))
+        self.add(InvalidItem(web_content, self))
         self.check_scroll()
 
     def add(self, item):
@@ -216,14 +226,22 @@ class PathItem(Frame):
         self.content.bind("<Button-1>", lambda x: self.select())
 
     def select(self):
+        if not self.content_txt:
+            return
         self.parent.extract_from(self.content_txt)
         self.content_txt.parent.next = self.content_txt
 
 
+class SearchedItem(PathItem):
+
+    def select(self):
+        pass
+
+
 class InvalidItem(PathItem):
 
-    def __init__(self, parent, content, **options):
-        super().__init__(None, parent, **options)
+    def __init__(self, content, parent, **options):
+        super(InvalidItem, self).__init__(None, parent, **options)
         self.content_txt = content
         self.content.config(text=content.error, font="calibri 12 italic")
         self.heading.config(text=content.url, font="calibri 13")
