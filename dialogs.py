@@ -127,7 +127,7 @@ class KeyWordSearch(TreeSearch):
         self.explorer["valid_urls"].root_link.start_search(self.explorer, *self.get_keywords())
 
     def get_keywords(self):
-        return list(map(lambda x: " {} ".format(x), self.key.val().split(",")))
+        return list(map(lambda x: r"[^\w]+{}[^\w]+".format(x), self.key.val().split(",")))
 
     def activate(self):
         self.explorer["invalid_urls"].clear()
