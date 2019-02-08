@@ -136,22 +136,22 @@ class App:
 
         self.menu = MenuBar(self.content, bg="orange", height=40, cursor="hand2")
         self.file = MenuItem(self.menu, bg="orange", fg="#505050", text="\ue8c8  file", font="calibri 12", width=15)
-        self.file.build(**{"\ued25 open": self.blank,
+        self.file.build(**{"\ued25 Open": self.blank,
                            "\ue74e Save": self.blank,
-                           "\ue749 print": self.blank,
-                           "\ue7e8 exit": self.terminate})
+                           "\ue749 Print": self.blank,
+                           "\ue7e8 Exit": self.terminate})
         self.file.show()
         self.search = MenuItem(self.menu, bg="orange", fg="#505050", text="\ue721  search", font="calibri 12",
                                width=15)
-        self.search.build(**{"\ue81e tree search": self.tree_search,
-                             "\ue71c keyword": self.keyword_search,
-                             "\ue773 file search": self.blank,
-                             "\uec27 find url": self.blank})
+        self.search.build(**{"\ue81e Tree search": self.tree_search,
+                             "\ue71c Keyword": self.keyword_search,
+                             "\ue773 File search": self.blank,
+                             "\uec27 Find url": self.blank})
         self.setting = MenuItem(self.menu, bg="orange", fg="#505050", text="\ue713  settings", font="calibri 12",
                                 width=15)
-        self.setting.build(**{"\ue790 appearance": self.blank,
-                              "\uec3f connection": self.blank,
-                              "\ue90f search": self.blank, })
+        self.setting.build(**{"\ue790 Appearance": self.blank,
+                              "\uec3f Connection": self.blank,
+                              "\ue90f Search": self.blank, })
         self.about = MenuItem(self.menu, bg="orange", fg="#505050", text="About", font="calibri 12", width=15)
         self.loader = Frame(self.content, bg="orange", height=2)
         # self.loader.pack(side="top", fill="x")
