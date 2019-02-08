@@ -2,7 +2,7 @@ from tkinter import Frame, Label, Canvas, ttk
 
 from animate import Animator, FancyLoader
 
-ITEM_HEIGHT = 60
+ITEM_HEIGHT = 30
 
 
 #  TODO Deal with eliminating magic values with constants like the one above
@@ -53,8 +53,8 @@ class ItemExplorer(Frame):
         self.no_content_text.pack(side="top", fill="y", anchor="n")
         self.no_content.place(relx=0.3, rely=0.3, relwidth=0.8, relheight=0.8)
 
-        self.expand_animate = Animator(3, 15, 1)
-        self.contract_animate = Animator(15, 3, 1)
+        self.expand_animate = Animator(3, 15, 0.5)
+        self.contract_animate = Animator(15, 3, 0.5)
         self.loader = FancyLoader(self.no_content_icon)
         self.mini_loader = FancyLoader(self.loading)
         self.loader.start_load()
