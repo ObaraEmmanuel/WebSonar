@@ -50,14 +50,14 @@ class DeepRecurse:
 
     def search(self, explorer=None, *keywords):
         if self.depth > self.max_depth:
+            explorer["valid_urls"].mini_loader.stop_load()
             if not DeepRecurse.matches and explorer:
                 explorer["valid_urls"].show_error("No matches for the keywords entered found")
-            explorer["valid_urls"].mini_loader.stop_load()
             return
-        if any([i.lower() in self.web_content.content.lower() for i in keywords]):
+        if any([re.search(i, self.web_content.content) for i in keywords]):
             explorer["valid_urls"].push_search_item(self)
-            DeepRecurse.matches.add(hashlib.sha3_256(self.web_content.url.encode("utf-8")).hexdigest())
         for link in self.web_content.plain_urls():
+            print(link)
             if hashlib.sha3_256(link.encode("utf-8")).hexdigest() in DeepRecurse.visited:
                 continue
             DeepRecurse.visited.add(hashlib.sha3_256(link.encode("utf-8")).hexdigest())
@@ -89,7 +89,7 @@ class WebContent:
         "url": r"https?://[^/]*(?:/[^\s]*)*",
         "uri": r"(?:/[^\W]+/[^\s>]+)+[^\W]",
         "file": r".*/(?P<terminal>[^/]+\.(?P<extension>.+))+",
-        "title": r".*<title>(?P<title>.+)</title>.*"
+        "title": r".*<title>(?P<title>.+)</title>.*",
     }
 
     def __init__(self, url, options):
